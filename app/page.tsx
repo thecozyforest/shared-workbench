@@ -470,9 +470,13 @@ export default function Home() {
             </div>
           )}
 
-          <div className="mt-12 grid gap-4 rounded-[30px] bg-[#17172a] p-6 text-white sm:grid-cols-[auto_1fr] sm:items-center sm:p-8">
+          <div className="mt-12 grid gap-4 rounded-[30px] bg-[#17172a] p-6 text-white sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-8">
             <div className="grid h-12 w-12 place-items-center rounded-full bg-[#ffcc4a] text-[#17172a]"><Lightbulb className="h-6 w-6" /></div>
             <p className="text-base leading-7 text-white/70"><strong className="text-white">이 결과는 일주 두 글자만 활용한 재미용 콘텐츠예요.</strong><br />실제 관계의 성공이나 사람의 좋고 나쁨을 판단하지 않습니다. 중요한 팀 결정은 대화와 실제 경험을 기준으로 해주세요.</p>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#ffcc4a]/40 bg-[#ffcc4a]/10 px-4 py-2 text-sm">
+              <span className="font-bold text-white/45">만든 이</span>
+              <strong className="font-black text-[#ffcc4a]">보드라운고슴도치</strong>
+            </div>
           </div>
         </div>
       </section>
