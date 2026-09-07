@@ -62,33 +62,6 @@ interface MemberResult extends Member {
   compatibility: CompatibilityResult;
 }
 
-const COMMUNITY: Member[] = [
-  { name: '모래', pillar: '임인', note: '기획과 리서치' },
-  { name: '보늬', pillar: '경신', note: '제품과 운영' },
-  { name: '누리', pillar: '병오', note: '콘텐츠와 홍보' },
-  { name: '초롱', pillar: '기축', note: '정산과 관리' },
-  { name: '하루', pillar: '갑자', note: '아이디어와 전략' },
-  { name: '온새미', pillar: '갑인', note: '브랜딩과 방향' },
-  { name: '마루', pillar: '을묘', note: '디자인과 편집' },
-  { name: '도담', pillar: '무진', note: '일정과 조율' },
-  { name: '여울', pillar: '기사', note: '고객과 커뮤니티' },
-  { name: '라온', pillar: '경오', note: '개발과 자동화' },
-  { name: '새봄', pillar: '신미', note: '품질과 검수' },
-  { name: '가람', pillar: '임신', note: '데이터와 분석' },
-  { name: '윤슬', pillar: '계유', note: '문서와 기록' },
-  { name: '다온', pillar: '갑술', note: '현장과 실행' },
-  { name: '아라', pillar: '을해', note: '관계와 중재' },
-  { name: '산들', pillar: '병자', note: '발표와 설득' },
-  { name: '해솔', pillar: '정축', note: '교육과 코칭' },
-  { name: '단비', pillar: '무인', note: '리더십과 결정' },
-  { name: '미리', pillar: '기묘', note: '기획과 일정' },
-  { name: '다솜', pillar: '경진', note: '기술과 구조' },
-  { name: '우주', pillar: '신사', note: '리스크와 검수' },
-  { name: '겨울', pillar: '임오', note: '탐색과 실험' },
-  { name: '소담', pillar: '계미', note: '지원과 운영' },
-  { name: '파도', pillar: '갑신', note: '확장과 제휴' },
-];
-
 const FILTERS: { value: 'all' | Bucket; label: string; shortLabel: string }[] = [
   { value: 'all', label: '모두', shortLabel: '모두' },
   { value: 'fit', label: '바로 손발', shortLabel: '찰떡' },
@@ -173,6 +146,10 @@ function MemberCard({ member, rank, onOpen }: { member: MemberResult; rank: numb
 
 export default function Home() {
   const [myPillar, setMyPillar] = useState('정유');
+  const [myName, setMyName] = useState('');
+  const [draftName, setDraftName] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
+  const [joinMessage, setJoinMessage] = useState('');
   const [filter, setFilter] = useState<'all' | Bucket>('all');
   const [viewMode, setViewMode] = useState<'members' | 'matrix'>('members');
   const [selectedName, setSelectedName] = useState<string | null>(null);
@@ -182,14 +159,16 @@ export default function Home() {
   const myIdentity = getPillarIdentity(myPillar);
   const results = useMemo<MemberResult[]>(
     () =>
-      COMMUNITY.map((member) => ({
-        ...member,
-        compatibility: analyzeCompatibility(myPillar, member.pillar, myIdentity.nickname, member.name),
-      })).sort((a, b) => b.compatibility.overall - a.compatibility.overall),
-    [myPillar, myIdentity.nickname],
+      members
+        .filter((member) => member.name !== myName)
+        .map((member) => ({
+          ...member,
+          compatibility: analyzeCompatibility(myPillar, member.pillar, myIdentity.nickname, member.name),
+        }))
+        .sort((a, b) => b.compatibility.overall - a.compatibility.overall),
+    [members, myName, myPillar, myIdentity.nickname],
   );
   const selected = results.find((member) => member.name === selectedName) ?? null;
-  const topThree = results.slice(0, 3);
   const relationshipMatrix = useMemo(
     () =>
       COLOR_OPTIONS.map((color) =>
@@ -199,11 +178,11 @@ export default function Home() {
             pillar,
             identity: getPillarIdentity(pillar),
             compatibility: analyzeCompatibility(myPillar, pillar),
-            memberCount: COMMUNITY.filter((member) => member.pillar === pillar).length,
+            memberCount: members.filter((member) => member.pillar === pillar).length,
           };
         }),
       ),
-    [myPillar],
+    [members, myPillar],
   );
 
   const counts = useMemo(
@@ -243,19 +222,52 @@ export default function Home() {
           setFilter('all');
           setViewMode('members');
           requestAnimationFrame(() => radarRef.current?.scrollIntoView({ behavior: 'smooth' }));
-          return { dayPillar, colorAnimal: getPillarIdentity(dayPillar).nickname, memberCount: COMMUNITY.length };
+          return { dayPillar, colorAnimal: getPillarIdentity(dayPillar).nickname, memberCount: members.length };
         },
       },
       { signal: lifecycle.signal },
     );
     void Promise.resolve(registration).catch(() => undefined);
     return () => lifecycle.abort();
-  }, []);
+  }, [members.length]);
 
-  const moveToRadar = () => radarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const choosePillar = (pillar: string) => {
     setMyPillar(pillar);
     setFilter('all');
+  };
+
+  const joinRoom = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = draftName.trim();
+    if (!name) {
+      setJoinMessage('닉네임을 먼저 입력해주세요.');
+      return;
+    }
+
+    const alreadyJoined = members.some((member) => member.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    setMembers((current) => [
+      ...current.filter((member) => member.name.toLocaleLowerCase() !== name.toLocaleLowerCase()),
+      { name, pillar: myPillar, note: '채팅방 참가자' },
+    ]);
+    setMyName(name);
+    setDraftName('');
+    setFilter('all');
+    setSelectedName(null);
+    setJoinMessage(alreadyJoined ? `${name}님의 일주를 바꿨어요.` : `${name}님의 자리가 채워졌어요.`);
+  };
+
+  const viewAsMember = (member: Member) => {
+    setMyName(member.name);
+    setMyPillar(member.pillar);
+    setFilter('all');
+    setSelectedName(null);
+  };
+
+  const clearRoom = () => {
+    setMembers([]);
+    setMyName('');
+    setDraftName('');
+    setJoinMessage('체험 명단을 비웠어요.');
   };
 
   const copyResult = async () => {
@@ -297,20 +309,38 @@ export default function Home() {
             </h1>
           </div>
 
-          <div className="max-w-[620px] rounded-[28px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm sm:p-6">
+          <form onSubmit={joinRoom} className="max-w-[620px] rounded-[28px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm sm:p-6">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-black text-white/80">내 일주를 골라주세요</p>
-                <p className="mt-1 text-xs text-white/40">만세력에서 확인한 두 글자를 선택하면 돼요</p>
+                <p className="text-sm font-black text-white/80">채팅방에 내 자리 채우기</p>
+                <p className="mt-1 text-xs text-white/40">닉네임과 만세력에서 확인한 일주를 입력해요</p>
               </div>
               <strong className="text-sm text-[#ffcc4a]">{myPillar}일주</strong>
             </div>
 
+            <label className="mb-2 block text-xs font-black text-white/55" htmlFor="nickname">닉네임</label>
+            <input
+              id="nickname"
+              value={draftName}
+              maxLength={20}
+              onChange={(event) => {
+                setDraftName(event.target.value);
+                setJoinMessage('');
+              }}
+              placeholder="예: 보드라운고슴도치"
+              className="mb-4 h-14 w-full rounded-2xl border border-white/15 bg-white/10 px-5 text-base font-bold text-white outline-none placeholder:text-white/25 focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
+            />
+
+            <label className="mb-2 block text-xs font-black text-white/55" htmlFor="day-pillar">내 일주</label>
             <div className="relative">
               <select
+                id="day-pillar"
                 aria-label="내 일주 선택"
                 value={myPillar}
-                onChange={(event) => choosePillar(event.target.value)}
+                onChange={(event) => {
+                  choosePillar(event.target.value);
+                  setJoinMessage('');
+                }}
                 className="h-14 w-full appearance-none rounded-2xl border border-white/15 bg-white/10 px-5 pr-12 text-lg font-black text-white outline-none transition focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
               >
                 {PILLARS.map((pillar) => (
@@ -335,47 +365,57 @@ export default function Home() {
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-5 text-white/40">생년월일은 입력하지 않아요. 만세력에서 확인한 일주만 선택합니다.</p>
-              <Button onClick={moveToRadar} className="h-11 rounded-full bg-[#ffcc4a] px-5 text-sm font-black text-[#17172a] hover:bg-[#ffd86f]">
-                내 레이더 보기 <ArrowDown className="ml-1 h-4 w-4" />
+              <p className="text-xs leading-5 text-white/40">생년월일은 받지 않아요. 이 데모에서는 열린 화면 안에서만 명단이 유지됩니다.</p>
+              <Button type="submit" className="h-11 rounded-full bg-[#ffcc4a] px-5 text-sm font-black text-[#17172a] hover:bg-[#ffd86f]">
+                내 자리 채우기 <ArrowDown className="ml-1 h-4 w-4" />
               </Button>
             </div>
-          </div>
+            {joinMessage && <p className="mt-3 text-sm font-bold text-[#ffcc4a]" role="status">{joinMessage}</p>}
+          </form>
         </div>
 
         <div className="relative rounded-[34px] bg-[#f5f1e8] p-4 text-[#17172a] shadow-[0_40px_100px_rgba(0,0,0,.3)] sm:p-6 lg:-rotate-[1deg] lg:p-8">
           <div className="flex items-end justify-between border-b border-[#17172a]/15 pb-6">
             <div>
-              <p className="mb-2 flex items-center gap-2 text-sm font-bold text-[#605f70]"><UsersRound className="h-4 w-4" /> {myIdentity.nickname}의 협업 레이더</p>
-              <h2 className="text-3xl font-black tracking-[-0.05em] sm:text-4xl">오늘 같이 일해볼 사람</h2>
+              <p className="mb-2 flex items-center gap-2 text-sm font-bold text-[#605f70]"><UsersRound className="h-4 w-4" /> 입력할 때마다 한 자리씩</p>
+              <h2 className="text-3xl font-black tracking-[-0.05em] sm:text-4xl">채팅방 참가자 자리</h2>
             </div>
-            <span className="hidden text-sm font-bold text-[#797786] sm:block">가상 예시 {COMMUNITY.length}명 중</span>
+            <span className="text-sm font-black text-[#797786]">{members.length}명 참여</span>
           </div>
 
-          <div className="mt-5 grid gap-4">
-            {topThree.map((member, index) => {
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {members.map((member) => {
               const identity = getPillarIdentity(member.pillar);
+              const active = member.name === myName;
               return (
-                <button key={member.name} onClick={() => setSelectedName(member.name)} className="top-member-card">
-                  <span className={`top-rank top-rank-${index + 1}`}>{index + 1}</span>
+                <button
+                  key={member.name}
+                  type="button"
+                  onClick={() => viewAsMember(member)}
+                  className={`relative min-h-36 rounded-[24px] border p-4 text-left transition ${active ? 'border-[#17172a] bg-[#ffcc4a]' : 'border-[#17172a]/10 bg-white hover:border-[#17172a]/35'}`}
+                >
                   <CharacterSeal pillar={member.pillar} />
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2"><strong className="text-xl font-black">{member.name}</strong><span className="rounded-full bg-[#eeebf4] px-2.5 py-1 text-xs font-bold text-[#605f70]">{identity.nickname}</span></span>
-                    <span className="mt-1.5 block text-sm font-bold text-[#6e6b78]">{member.compatibility.typeLabel}</span>
-                  </span>
-                  <span className="text-right"><strong className="block text-3xl font-black tracking-[-0.06em]">{member.compatibility.overall}°</strong><span className="text-xs font-bold text-[#8b8892]">케미 온도</span></span>
+                  {active && <span className="absolute right-3 top-3 rounded-full bg-[#17172a] px-2 py-1 text-[10px] font-black text-white">내 기준</span>}
+                  <strong className="mt-3 block truncate text-lg font-black">{member.name}</strong>
+                  <span className="mt-1 block text-xs font-bold text-[#686575]">{member.pillar}일주 · {identity.nickname}</span>
                 </button>
               );
             })}
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(Object.keys(counts) as Bucket[]).map((bucket) => (
-              <div key={bucket} className="rounded-2xl bg-[#eae5da] px-4 py-3">
-                <p className="text-xs font-bold text-[#77737c]">{BUCKET_COPY[bucket].label}</p>
-                <p className="mt-1 text-xl font-black">{counts[bucket]}명</p>
+            {Array.from({ length: Math.max(0, 6 - members.length) }).map((_, index) => (
+              <div key={`empty-${index}`} className="grid min-h-36 place-items-center rounded-[24px] border border-dashed border-[#17172a]/20 bg-[#ece7dc]/45 p-4 text-center">
+                <div>
+                  <span className="mx-auto grid h-9 w-9 place-items-center rounded-full border border-dashed border-[#17172a]/25 text-lg text-[#8b8790]">+</span>
+                  <p className="mt-2 text-xs font-bold text-[#8b8790]">다음 참가자 자리</p>
+                </div>
               </div>
             ))}
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 rounded-2xl bg-[#eae5da] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-bold text-[#6c6975]">참가자를 누르면 그 사람을 기준으로 아래 협업 지도가 바뀝니다.</p>
+            {members.length > 0 && (
+              <button type="button" onClick={clearRoom} className="w-fit text-xs font-black text-[#8a5350] underline underline-offset-4">체험 명단 비우기</button>
+            )}
           </div>
         </div>
       </section>
@@ -394,7 +434,7 @@ export default function Home() {
           </div>
 
           <div className="mt-6 rounded-2xl border border-[#e2b231]/40 bg-[#fff1bd] px-4 py-3 text-sm font-bold leading-6 text-[#6f5210]">
-            현재 이름과 인원수는 화면 흐름을 보여주기 위한 가상 예시입니다. 실제 회원 데이터는 아직 연결되지 않았어요.
+            참가자가 직접 자리를 채우는 운영 논의용 데모입니다. 지금은 열린 화면 안에서만 명단이 유지되며, 새로고침하거나 다른 기기에서 열면 빈 상태로 시작해요.
           </div>
 
           <div className="mode-switch" role="tablist" aria-label="관계 보기 방식">
