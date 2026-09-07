@@ -10,6 +10,7 @@ import {
   Gauge,
   HeartHandshake,
   Lightbulb,
+  Search,
   Sparkles,
   Target,
   UsersRound,
@@ -146,6 +147,7 @@ function MemberCard({ member, rank, onOpen }: { member: MemberResult; rank: numb
 
 export default function Home() {
   const [myPillar, setMyPillar] = useState('정유');
+  const [pillarQuery, setPillarQuery] = useState('');
   const [myName, setMyName] = useState('');
   const [draftName, setDraftName] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
@@ -157,6 +159,12 @@ export default function Home() {
   const radarRef = useRef<HTMLElement>(null);
 
   const myIdentity = getPillarIdentity(myPillar);
+  const normalizedPillarQuery = pillarQuery.replace(/\s/g, '').replace(/일주$/, '');
+  const matchingPillars = PILLARS.filter((pillar) => {
+    const identity = getPillarIdentity(pillar);
+    const searchable = `${pillar}일주${identity.nickname}`.replace(/\s/g, '');
+    return !normalizedPillarQuery || searchable.includes(normalizedPillarQuery);
+  });
   const results = useMemo<MemberResult[]>(
     () =>
       members
@@ -243,7 +251,6 @@ export default function Home() {
       setJoinMessage('닉네임을 먼저 입력해주세요.');
       return;
     }
-
     const alreadyJoined = members.some((member) => member.name.toLocaleLowerCase() === name.toLocaleLowerCase());
     setMembers((current) => [
       ...current.filter((member) => member.name.toLocaleLowerCase() !== name.toLocaleLowerCase()),
@@ -331,25 +338,62 @@ export default function Home() {
               className="mb-4 h-14 w-full rounded-2xl border border-white/15 bg-white/10 px-5 text-base font-bold text-white outline-none placeholder:text-white/25 focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
             />
 
-            <label className="mb-2 block text-xs font-black text-white/55" htmlFor="day-pillar">내 일주</label>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="text-xs font-black text-white/55" htmlFor="day-pillar-search">내 일주 찾기</label>
+              <button type="button" onClick={() => setPillarQuery('')} className="text-xs font-black text-[#ffcc4a] underline underline-offset-4">60일주 전체 보기</button>
+            </div>
             <div className="relative">
-              <select
-                id="day-pillar"
-                aria-label="내 일주 선택"
-                value={myPillar}
-                onChange={(event) => {
-                  choosePillar(event.target.value);
-                  setJoinMessage('');
-                }}
-                className="h-14 w-full appearance-none rounded-2xl border border-white/15 bg-white/10 px-5 pr-12 text-lg font-black text-white outline-none transition focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
-              >
-                {PILLARS.map((pillar) => (
-                  <option key={pillar} value={pillar} className="bg-[#17172a] text-white">
-                    {pillar}일주
-                  </option>
-                ))}
-              </select>
-              <ArrowDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#ffcc4a]" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+              <input
+                id="day-pillar-search"
+                value={pillarQuery}
+                onChange={(event) => setPillarQuery(event.target.value)}
+                placeholder="정유, 정유일주, 붉은 닭 검색"
+                className="h-12 w-full rounded-2xl border border-white/15 bg-white/10 pl-11 pr-4 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
+              />
+            </div>
+
+            <div className="mt-3 max-h-[360px] overflow-y-auto rounded-2xl border border-white/10 bg-black/10 p-2">
+              {matchingPillars.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {matchingPillars.map((pillar) => {
+                    const identity = getPillarIdentity(pillar);
+                    const active = pillar === myPillar;
+                    const darkTile = identity.colorWord === '검은';
+                    return (
+                      <button
+                        key={pillar}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => {
+                          choosePillar(pillar);
+                          setJoinMessage('');
+                        }}
+                        className="relative min-h-28 rounded-2xl border-2 p-3 text-left transition hover:-translate-y-0.5 hover:brightness-105"
+                        style={{
+                          backgroundColor: identity.color,
+                          borderColor: active ? '#ffffff' : 'transparent',
+                          boxShadow: active ? '0 0 0 3px #17172a, 0 0 0 5px #ffcc4a' : undefined,
+                          color: darkTile ? '#ffffff' : '#17172a',
+                        }}
+                      >
+                        {active && <Check className="absolute right-2 top-2 h-4 w-4" />}
+                        <span
+                          className="grid h-11 w-11 place-items-center rounded-full border border-black/10 text-2xl shadow-sm"
+                          style={{ backgroundColor: identity.branchColor }}
+                          aria-hidden="true"
+                        >
+                          {identity.emoji}
+                        </span>
+                        <strong className="mt-2 block text-base font-black">{pillar}일주</strong>
+                        <small className={`block text-[11px] font-black ${darkTile ? 'text-white/65' : 'text-[#17172a]/60'}`}>{identity.nickname}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="px-4 py-8 text-center text-sm font-bold text-white/45">찾는 일주가 없어요. 두 글자를 확인해주세요.</div>
+              )}
             </div>
 
             <div className="mt-4 grid items-center gap-3 rounded-2xl bg-[#ffcc4a] p-4 text-[#17172a] sm:grid-cols-[1fr_auto_1fr]">

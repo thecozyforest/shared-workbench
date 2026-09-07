@@ -95,6 +95,7 @@ export function getPillarIdentity(pillar: string) {
   if (!PILLARS.includes(pillar)) throw new Error('유효한 60일주가 아닙니다.');
   const [stem, branch] = pillar;
   const element = STEM_META[stem].element;
+  const branchElement = BRANCH_META[branch].element;
   return {
     nickname: `${COLOR_WORD[element]} ${ANIMAL[branch]}`,
     colorWord: COLOR_WORD[element],
@@ -102,6 +103,8 @@ export function getPillarIdentity(pillar: string) {
     emoji: ANIMAL_EMOJI[branch],
     color: COLOR_HEX[element],
     element,
+    branchColor: COLOR_HEX[branchElement],
+    branchElement,
   };
 }
 
