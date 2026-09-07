@@ -109,10 +109,10 @@ const ANIMAL_OPTIONS = [
 ] as const;
 
 const BUCKET_COPY: Record<Bucket, { label: string; className: string; headerColor: string; headerText: string }> = {
-  fit: { label: '바로 손발', className: 'bucket-fit', headerColor: '#3ba9df', headerText: '#102b3b' },
-  complement: { label: '의외의 보완', className: 'bucket-complement', headerColor: '#45a967', headerText: '#ffffff' },
-  fire: { label: '불꽃 추진', className: 'bucket-fire', headerColor: '#e7b839', headerText: '#3c3010' },
-  manual: { label: '설명서 필요', className: 'bucket-manual', headerColor: '#c9473a', headerText: '#ffffff' },
+  fit: { label: '바로 손발', className: 'bucket-fit', headerColor: '#126b61', headerText: '#d8fff5' },
+  complement: { label: '의외의 보완', className: 'bucket-complement', headerColor: '#334155', headerText: '#f8fafc' },
+  fire: { label: '불꽃 추진', className: 'bucket-fire', headerColor: '#9f1239', headerText: '#ffe4e6' },
+  manual: { label: '설명서 필요', className: 'bucket-manual', headerColor: '#71551c', headerText: '#fff2bd' },
 };
 
 function CharacterSeal({ pillar, size = 'normal' }: { pillar: string; size?: 'normal' | 'large' }) {
@@ -131,7 +131,7 @@ function CharacterSeal({ pillar, size = 'normal' }: { pillar: string; size?: 'no
 function PillarGroupCard({ group, onOpen }: { group: PillarMemberGroup; onOpen: (name: string) => void }) {
   const bucket = BUCKET_COPY[group.compatibility.bucket];
   return (
-    <article className="overflow-hidden rounded-[22px] border border-[#17172a]/15 bg-[#f2eee6]">
+    <article className="pillar-group-card overflow-hidden rounded-[18px]">
       <header className="flex min-h-12 items-center gap-2 px-4 py-2.5" style={{ background: bucket.headerColor, color: bucket.headerText }}>
         <strong className="text-base font-black">{group.pillar}일주</strong>
         <span className="text-xs font-black opacity-80">{group.identity.emoji} {group.identity.nickname}</span>
@@ -150,7 +150,7 @@ function PillarGroupCard({ group, onOpen }: { group: PillarMemberGroup; onOpen: 
             key={member.name}
             type="button"
             onClick={() => onOpen(member.name)}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[#17172a]/12 bg-white px-2.5 pr-3 text-sm font-black transition hover:-translate-y-0.5 hover:border-[#17172a]/30"
+            className="member-chip inline-flex h-10 items-center gap-2 rounded-full px-2.5 pr-3 text-sm font-black transition hover:-translate-y-0.5"
           >
             <span className="grid h-7 w-7 place-items-center rounded-full text-base" style={{ background: group.identity.branchColor }} aria-hidden="true">{group.identity.emoji}</span>
             @{member.name}
@@ -325,38 +325,43 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#17172a] text-[#f7f4ee]">
-      <header className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-5 sm:px-8 lg:px-12">
+    <main className="saju-shell min-h-screen overflow-hidden text-[#f1f4fd]">
+      <div className="celestial-field" aria-hidden="true">
+        <div className="celestial-orbit celestial-orbit-top" />
+        <div className="celestial-orbit celestial-orbit-bottom" />
+      </div>
+      <header className="saju-header relative z-30 mx-auto flex w-full max-w-[1440px] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#ffcc4a] text-sm font-black text-[#17172a]">日</div>
+          <div className="brand-seal grid h-11 w-11 place-items-center rounded-xl text-sm font-black">命理</div>
           <div>
-            <p className="text-lg font-black tracking-[-0.04em]">일주 팀플 케미</p>
-            <p className="text-xs text-white/45">도름스 커뮤니티 실험실 · 화면 시안</p>
+            <p className="font-serif-kr text-lg font-black tracking-[-0.04em]">일주 팀플 케미 <span className="ml-1 text-xs text-[#f7b955]">四柱干支</span></p>
+            <p className="font-serif-kr text-xs text-white/45">도름스 오행 협업 연구소 · 相生相剋</p>
           </div>
         </div>
-        <span className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/55">운영 논의용 데모</span>
+        <span className="demo-badge rounded-full px-3 py-1.5 text-xs">운영 논의용 명리 데모</span>
       </header>
 
-      <section className="relative mx-auto grid w-full max-w-[1440px] gap-7 px-5 pb-16 pt-5 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(580px,1.35fr)] lg:px-12 lg:pb-24 lg:pt-10">
+      <section className="relative z-10 mx-auto grid w-full max-w-[1440px] gap-7 px-5 pb-16 pt-7 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(580px,1.35fr)] lg:px-12 lg:pb-24 lg:pt-12">
         <div className="relative z-10 flex flex-col justify-between gap-10 lg:min-h-[690px]">
           <div>
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-2 text-sm text-[#ffcc4a]">
-              <Sparkles className="h-4 w-4" /> 내 일주로 찾는 나의 협업 동료
+            <div className="gold-kicker mb-7 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm">
+              <span className="mini-stamp">天命</span><Sparkles className="h-4 w-4" /> 60갑자 기반 협업 궁합
             </div>
-            <h1 className="max-w-[630px] text-[clamp(3rem,7vw,6.9rem)] font-black leading-[0.92] tracking-[-0.075em]">
-              <span className="text-[#ffcc4a]">{myIdentity.nickname}</span>인 나,
+            <h1 className="font-serif-kr max-w-[630px] text-[clamp(2.8rem,6.3vw,6.2rem)] font-black leading-[1.05] tracking-[-0.075em]">
+              <span className="gold-title">{myIdentity.nickname}</span>인 나,
               <br />누구랑 하면
               <br />일이 풀릴까?
             </h1>
+            <p className="font-serif-kr mt-6 max-w-[560px] text-sm leading-7 text-white/55 sm:text-base">사주의 중심인 일주(日柱)와 음양오행의 기운을 현대의 팀워크 언어로 가볍게 풀어봅니다.</p>
           </div>
 
-          <form onSubmit={joinRoom} className="max-w-[620px] rounded-[28px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm sm:p-6">
+          <form onSubmit={joinRoom} className="korean-corner gold-panel max-w-[620px] rounded-[18px] p-5 backdrop-blur-sm sm:p-6">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-black text-white/80">내 일주 등록하기</p>
                 <p className="mt-1 text-xs text-white/40">한 번 등록하면 기존 회원 전체와의 궁합을 볼 수 있어요</p>
               </div>
-              <strong className="text-sm text-[#ffcc4a]">{myPillar}일주</strong>
+              <strong className="pillar-badge text-sm">{myPillar}일주</strong>
             </div>
 
             <label className="mb-2 block text-xs font-black text-white/55" htmlFor="nickname">닉네임</label>
@@ -369,12 +374,12 @@ export default function Home() {
                 setJoinMessage('');
               }}
               placeholder="예: 보드라운고슴도치"
-              className="mb-4 h-14 w-full rounded-2xl border border-white/15 bg-white/10 px-5 text-base font-bold text-white outline-none placeholder:text-white/25 focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
+              className="mystic-input mb-4 h-14 w-full rounded-xl px-5 text-base font-bold text-white outline-none placeholder:text-white/25"
             />
 
             <div className="mb-2 flex items-center justify-between gap-3">
               <label className="text-xs font-black text-white/55" htmlFor="day-pillar-search">내 일주 찾기</label>
-              <button type="button" onClick={() => setPillarQuery('')} className="text-xs font-black text-[#ffcc4a] underline underline-offset-4">60일주 전체 보기</button>
+              <button type="button" onClick={() => setPillarQuery('')} className="text-xs font-black text-[#ffc478] underline underline-offset-4">60일주 전체 보기</button>
             </div>
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
@@ -383,7 +388,7 @@ export default function Home() {
                 value={pillarQuery}
                 onChange={(event) => setPillarQuery(event.target.value)}
                 placeholder="정유, 정유일주, 붉은 닭 검색"
-                className="h-12 w-full rounded-2xl border border-white/15 bg-white/10 pl-11 pr-4 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
+                className="mystic-input h-12 w-full rounded-xl pl-11 pr-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
               />
             </div>
 
@@ -430,7 +435,7 @@ export default function Home() {
               )}
             </div>
 
-            <div className="mt-4 grid items-center gap-3 rounded-2xl bg-[#ffcc4a] p-4 text-[#17172a] sm:grid-cols-[1fr_auto_1fr]">
+            <div className="selected-pillar mt-4 grid items-center gap-3 rounded-xl p-4 sm:grid-cols-[1fr_auto_1fr]">
               <div>
                 <p className="text-[11px] font-black text-[#17172a]/55">선택한 일주</p>
                 <strong className="mt-1 block text-xl font-black">{myPillar}일주</strong>
@@ -444,41 +449,41 @@ export default function Home() {
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-5 text-white/40">생년월일은 받지 않아요. 이 데모에서는 열린 화면 안에서만 명단이 유지됩니다.</p>
-              <Button type="submit" className="h-11 rounded-full bg-[#ffcc4a] px-5 text-sm font-black text-[#17172a] hover:bg-[#ffd86f]">
-                내 일주 등록하기 <ArrowDown className="ml-1 h-4 w-4" />
+              <Button type="submit" className="gold-button h-11 rounded-xl px-5 text-sm font-black">
+                명판 등록하기 <ArrowDown className="ml-1 h-4 w-4" />
               </Button>
             </div>
-            {joinMessage && <p className="mt-3 text-sm font-bold text-[#ffcc4a]" role="status">{joinMessage}</p>}
+            {joinMessage && <p className="mt-3 text-sm font-bold text-[#ffc478]" role="status">{joinMessage}</p>}
           </form>
         </div>
 
-        <div className="relative rounded-[34px] bg-[#f5f1e8] p-4 text-[#17172a] shadow-[0_40px_100px_rgba(0,0,0,.3)] sm:p-6 lg:-rotate-[1deg] lg:p-8">
-          <div className="flex flex-col gap-3 rounded-2xl border border-[#17172a]/12 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="korean-corner result-console relative rounded-[20px] p-4 shadow-[0_40px_100px_rgba(0,0,0,.3)] sm:p-6 lg:p-8">
+          <div className="sub-panel flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             {myName ? (
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-bold text-[#777481]">내 일주</span>
+                <span className="font-bold text-white/45">내 일주</span>
                 <strong className="text-base font-black">@{myName}</strong>
                 <span className="font-black">{myPillar}일주 · {myIdentity.emoji} {myIdentity.nickname}</span>
-                <span className="rounded-full bg-[#d9f1dc] px-2 py-1 text-[11px] font-black text-[#287341]">등록 완료</span>
+                <span className="rounded-full border border-[#56e5a9]/30 bg-[#56e5a9]/10 px-2 py-1 text-[11px] font-black text-[#56e5a9]">등록 완료</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-sm font-bold text-[#777481]"><UsersRound className="h-4 w-4" /> 닉네임과 일주를 등록하면 내 팀원표가 열려요.</div>
+              <div className="flex items-center gap-2 text-sm font-bold text-white/45"><UsersRound className="h-4 w-4" /> 닉네임과 일주를 등록하면 내 팀원표가 열려요.</div>
             )}
             {myName && (
               <div className="flex gap-2">
-                <button type="button" onClick={editMyRegistration} className="rounded-full border border-[#17172a]/15 px-3 py-1.5 text-xs font-black">바꾸기</button>
-                <button type="button" onClick={removeMyRegistration} className="rounded-full border border-[#17172a]/15 px-3 py-1.5 text-xs font-black">내리기</button>
+                <button type="button" onClick={editMyRegistration} className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-black">바꾸기</button>
+                <button type="button" onClick={removeMyRegistration} className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-black">내리기</button>
               </div>
             )}
           </div>
 
-          <div className="mt-5 rounded-[24px] border border-[#17172a]/12 bg-white p-5">
+          <div className="sub-panel mt-5 rounded-[16px] p-5">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-bold text-[#777481]">{myName ? `${myName}님의 팀원표` : '내 팀원표 미리보기'}</p>
-                <h2 className="mt-1 text-2xl font-black tracking-[-0.04em]">기존 회원과의 궁합 흐름</h2>
+                <p className="text-sm font-bold text-white/45">{myName ? `${myName}님의 팀원표` : '내 팀원표 미리보기'}</p>
+                <h2 className="font-serif-kr mt-1 text-2xl font-black tracking-[-0.04em]">기존 회원과의 궁합 흐름 <small className="ml-1 text-xs text-[#ffc478]">相性圖</small></h2>
               </div>
-              <span className="text-sm font-black text-[#797786]">지금까지 {members.length}명</span>
+              <span className="text-sm font-black text-white/45">지금까지 {members.length}명</span>
             </div>
 
             {myName && groupedResults.length > 0 ? (
@@ -506,15 +511,15 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <div className="mt-5 grid min-h-40 place-items-center rounded-2xl border border-dashed border-[#17172a]/18 bg-[#f3efe7] px-5 text-center">
+              <div className="empty-mystic mt-5 grid min-h-40 place-items-center rounded-xl px-5 text-center">
                 <div>
                   <p className="font-black">{myName ? '아직 비교할 다른 회원이 없어요.' : '내 정보를 먼저 등록해주세요.'}</p>
-                  <p className="mt-2 text-sm leading-6 text-[#777481]">회원이 등록될수록 궁합순 막대와 일주별 회원 그룹이 채워집니다.</p>
+                  <p className="mt-2 text-sm leading-6 text-white/45">회원이 등록될수록 궁합순 막대와 일주별 회원 그룹이 채워집니다.</p>
                 </div>
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-[#676473]">
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-bold text-white/50">
               {(Object.keys(BUCKET_COPY) as Bucket[]).map((bucket) => (
                 <span key={bucket} className="inline-flex items-center gap-1.5"><i className="h-3 w-3 rounded-sm" style={{ background: BUCKET_COPY[bucket].headerColor }} />{BUCKET_COPY[bucket].label}</span>
               ))}
@@ -523,8 +528,8 @@ export default function Home() {
 
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(Object.keys(counts) as Bucket[]).map((bucket) => (
-              <div key={bucket} className="rounded-2xl bg-[#eae5da] px-4 py-3">
-                <p className="text-xs font-bold text-[#77737c]">{BUCKET_COPY[bucket].label}</p>
+              <div key={bucket} className="metric-card rounded-xl px-4 py-3">
+                <p className="text-xs font-bold text-white/45">{BUCKET_COPY[bucket].label}</p>
                 <p className="mt-1 text-xl font-black">{counts[bucket]}명</p>
               </div>
             ))}
@@ -532,20 +537,20 @@ export default function Home() {
         </div>
       </section>
 
-      <section ref={radarRef} className="bg-[#f5f1e8] text-[#17172a]" id="radar">
+      <section ref={radarRef} className="radar-section relative z-10" id="radar">
         <div className="mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-12 lg:py-24">
-          <div className="grid gap-6 border-b border-[#17172a]/15 pb-9 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="grid gap-6 border-b border-[#f59e0b]/20 pb-9 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="flex items-center gap-5">
               <CharacterSeal pillar={myPillar} size="large" />
               <div>
-                <p className="mb-2 text-sm font-black text-[#6f6c78]">MY TEAM RADAR</p>
-                <h2 className="text-4xl font-black tracking-[-0.055em] sm:text-6xl">{myName ? `${myName} · ` : ''}{myIdentity.nickname}의 사람 지도</h2>
+                <p className="mb-2 text-sm font-black text-[#ffc478]">MY TEAM RADAR · 人緣圖</p>
+                <h2 className="font-serif-kr text-4xl font-black tracking-[-0.055em] sm:text-6xl">{myName ? `${myName} · ` : ''}{myIdentity.nickname}의 사람 지도</h2>
               </div>
             </div>
-            <p className="max-w-[420px] text-base leading-7 text-[#666370]">편한 사람만 좋은 동료는 아니에요. 손발, 보완, 불꽃, 설명서라는 네 가지 방식으로 함께 일할 사람을 찾아보세요.</p>
+            <p className="font-serif-kr max-w-[420px] text-base leading-7 text-white/55">편한 사람만 좋은 동료는 아니에요. 손발, 보완, 불꽃, 설명서라는 네 가지 방식으로 함께 일할 사람을 찾아보세요.</p>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-[#e2b231]/40 bg-[#fff1bd] px-4 py-3 text-sm font-bold leading-6 text-[#6f5210]">
+          <div className="operation-note mt-6 rounded-xl px-4 py-3 text-sm font-bold leading-6">
             실제 운영에서는 먼저 등록한 회원이 계속 누적되고, 새 회원은 자기 정보만 등록하면 기존 회원 전체와의 궁합을 보게 됩니다. 지금 시안에서는 같은 화면에서 여러 닉네임을 등록해 그 흐름을 체험할 수 있어요.
           </div>
 
@@ -558,7 +563,7 @@ export default function Home() {
             <Tabs value={filter} onValueChange={(value) => setFilter(value as 'all' | Bucket)} className="mt-6">
               <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto rounded-none bg-transparent p-0" variant="line">
                 {FILTERS.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value} className="h-11 flex-none rounded-full border border-[#17172a]/15 px-4 text-sm font-black data-active:border-[#17172a] data-active:bg-[#17172a] data-active:text-white after:hidden">
+                  <TabsTrigger key={item.value} value={item.value} className="h-11 flex-none rounded-full border border-white/15 px-4 text-sm font-black text-white/55 data-active:border-[#f59e0b]/50 data-active:bg-[#f59e0b]/15 data-active:text-[#ffc478] after:hidden">
                     {item.label}{item.value !== 'all' ? ` ${counts[item.value]}` : ` ${results.length}`}
                   </TabsTrigger>
                 ))}
@@ -577,22 +582,22 @@ export default function Home() {
                         ))}
                       </div>
                     ) : (
-                      <div className="rounded-[28px] border border-dashed border-[#17172a]/20 py-16 text-center">
+                      <div className="empty-mystic rounded-[18px] py-16 text-center">
                         <p className="text-lg font-black">{myName ? '이 범주에 등록된 회원이 아직 없어요.' : '내 닉네임과 일주를 먼저 등록해주세요.'}</p>
-                        <p className="mt-2 text-[#75727d]">회원이 들어오면 일주별 카드 안에 닉네임이 모여요.</p>
+                        <p className="mt-2 text-white/45">회원이 들어오면 일주별 카드 안에 닉네임이 모여요.</p>
                       </div>
                     )}
                   </TabsContent>
                 );
               })}
-              <p className="mt-7 text-sm font-bold text-[#96919b]">아직 등록한 분이 없는 일주: {PILLARS.length - registeredPillarCount}개</p>
+              <p className="mt-7 text-sm font-bold text-white/35">아직 등록한 분이 없는 일주: {PILLARS.length - registeredPillarCount}개</p>
             </Tabs>
           ) : (
             <div className="matrix-panel">
               <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <h3 className="text-xl font-black">{myIdentity.nickname} 기준 60색동물 관계표</h3>
-                  <p className="mt-1 text-sm text-[#777481]">칸의 숫자는 케미 온도예요. 누르면 같은 관계의 팀원 목록으로 이동합니다.</p>
+                  <p className="mt-1 text-sm text-white/45">칸의 숫자는 케미 온도예요. 누르면 같은 관계의 팀원 목록으로 이동합니다.</p>
                 </div>
                 <div className="matrix-legend">
                   {(Object.keys(BUCKET_COPY) as Bucket[]).map((bucket) => <span key={bucket}><i className={`matrix-${bucket}`} />{BUCKET_COPY[bucket].label}</span>)}
@@ -623,12 +628,12 @@ export default function Home() {
             </div>
           )}
 
-          <div className="mt-12 grid gap-4 rounded-[30px] bg-[#17172a] p-6 text-white sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-8">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-[#ffcc4a] text-[#17172a]"><Lightbulb className="h-6 w-6" /></div>
+          <div className="creator-panel korean-corner mt-12 grid gap-4 rounded-[18px] p-6 text-white sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-8">
+            <div className="grid h-12 w-12 place-items-center rounded-xl border border-[#f59e0b]/35 bg-[#f59e0b]/10 text-[#ffc478]"><Lightbulb className="h-6 w-6" /></div>
             <p className="text-base leading-7 text-white/70"><strong className="text-white">이 결과는 일주 두 글자만 활용한 재미용 콘텐츠예요.</strong><br />실제 관계의 성공이나 사람의 좋고 나쁨을 판단하지 않습니다. 중요한 팀 결정은 대화와 실제 경험을 기준으로 해주세요.</p>
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#ffcc4a]/40 bg-[#ffcc4a]/10 px-4 py-2 text-sm">
+            <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-4 py-2 text-sm">
               <span className="font-bold text-white/45">만든 이</span>
-              <strong className="font-black text-[#ffcc4a]">보드라운고슴도치</strong>
+              <span className="mini-stamp">印</span><strong className="font-serif-kr font-black text-[#ffc478]">보드라운고슴도치</strong>
             </div>
           </div>
         </div>
@@ -639,17 +644,17 @@ export default function Home() {
           const identity = getPillarIdentity(selected.pillar);
           const compatibility = selected.compatibility;
           return (
-            <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[30px] border-0 bg-[#f5f1e8] p-0 text-[#17172a] sm:max-w-[760px]">
-              <div className="relative overflow-hidden rounded-t-[30px] bg-[#17172a] px-6 pb-8 pt-7 text-white sm:px-9">
+            <DialogContent className="mystic-dialog max-h-[92vh] overflow-y-auto rounded-[20px] border-0 p-0 sm:max-w-[760px]">
+              <div className="relative overflow-hidden rounded-t-[20px] bg-[#070b14] px-6 pb-8 pt-7 text-white sm:px-9">
                 <div className="absolute -right-14 -top-20 h-64 w-64 rounded-full border-[48px] border-white/[0.04]" />
                 <DialogHeader className="relative">
-                  <DialogDescription className="text-sm font-black text-[#ffcc4a]">COLOR ANIMAL TEAM CHEMISTRY</DialogDescription>
+                  <DialogDescription className="text-sm font-black text-[#ffc478]">COLOR ANIMAL TEAM CHEMISTRY · 相生相剋</DialogDescription>
                   <div className="flex items-center gap-3 pt-3 sm:gap-5">
                     <CharacterSeal pillar={myPillar} size="large" />
                     <span className="text-2xl font-light text-white/30">×</span>
                     <CharacterSeal pillar={selected.pillar} size="large" />
                     <div className="ml-auto text-right">
-                      <strong className="block text-5xl font-black tracking-[-0.08em] text-[#ffcc4a]">{compatibility.overall}°</strong>
+                      <strong className="block text-5xl font-black tracking-[-0.08em] text-[#ffc478]">{compatibility.overall}°</strong>
                       <span className="text-xs font-bold text-white/50">케미 온도</span>
                     </div>
                   </div>
@@ -679,9 +684,9 @@ export default function Home() {
                   <div className="detail-card detail-card-yellow"><Zap className="h-5 w-5" /><div><h3>협업 사용설명서</h3><p>{compatibility.tip}</p></div></div>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-[#17172a]/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-[#777481]">{selected.name}님과의 결과를 복사해서 공유해보세요.</p>
-                  <Button onClick={copyResult} className="h-11 rounded-full bg-[#17172a] px-5 font-black text-white hover:bg-[#2d2d45]">
+                <div className="flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-white/45">{selected.name}님과의 결과를 복사해서 공유해보세요.</p>
+                  <Button onClick={copyResult} className="gold-button h-11 rounded-xl px-5 font-black">
                     {copied ? <Check className="mr-1 h-4 w-4" /> : <Clipboard className="mr-1 h-4 w-4" />}{copied ? '복사했어요' : '결과 복사하기'}
                   </Button>
                 </div>
