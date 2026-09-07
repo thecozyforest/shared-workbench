@@ -163,12 +163,12 @@ function PillarGroupCard({ group, onOpen }: { group: PillarMemberGroup; onOpen: 
 }
 
 export default function Home() {
-  const [myPillar, setMyPillar] = useState('정유');
+  const [myPillar, setMyPillar] = useState<string | null>(null);
+  const [draftPillar, setDraftPillar] = useState<string | null>(null);
   const [entryMode, setEntryMode] = useState<'birthday' | 'manual'>('birthday');
   const [birthDate, setBirthDate] = useState('');
   const [lateNight, setLateNight] = useState(false);
   const [birthResult, setBirthResult] = useState<{ pillar: string; hanja: string } | null>(null);
-  const [selectionConfirmed, setSelectionConfirmed] = useState(false);
   const [pillarQuery, setPillarQuery] = useState('');
   const [myName, setMyName] = useState('');
   const [draftName, setDraftName] = useState('');
@@ -180,7 +180,9 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const radarRef = useRef<HTMLElement>(null);
 
-  const myIdentity = getPillarIdentity(myPillar);
+  const myIdentity = myPillar ? getPillarIdentity(myPillar) : null;
+  const draftIdentity = draftPillar ? getPillarIdentity(draftPillar) : null;
+  const heroIdentity = draftIdentity ?? myIdentity;
   const normalizedPillarQuery = pillarQuery.replace(/\s/g, '').replace(/일주$/, '');
   const matchingPillars = PILLARS.filter((pillar) => {
     const identity = getPillarIdentity(pillar);
@@ -189,7 +191,7 @@ export default function Home() {
   });
   const results = useMemo<MemberResult[]>(
     () => {
-      if (!myName) return [];
+      if (!myName || !myPillar || !myIdentity) return [];
       return members
         .filter((member) => member.name !== myName)
         .map((member) => ({
@@ -198,7 +200,7 @@ export default function Home() {
         }))
         .sort((a, b) => b.compatibility.overall - a.compatibility.overall);
     },
-    [members, myName, myPillar, myIdentity.nickname],
+    [members, myName, myPillar, myIdentity],
   );
   const groupedResults = useMemo<PillarMemberGroup[]>(() => {
     const grouped = new Map<string, MemberResult[]>();
@@ -220,8 +222,9 @@ export default function Home() {
   const selected = results.find((member) => member.name === selectedName) ?? null;
   const registeredPillarCount = new Set(members.map((member) => member.pillar)).size;
   const relationshipMatrix = useMemo(
-    () =>
-      COLOR_OPTIONS.map((color) =>
+    () => {
+      if (!myPillar) return [];
+      return COLOR_OPTIONS.map((color) =>
         ANIMAL_OPTIONS.map((animal) => {
           const pillar = getPillarByIdentity(color.word, animal.name);
           return {
@@ -231,7 +234,8 @@ export default function Home() {
             memberCount: members.filter((member) => member.pillar === pillar).length,
           };
         }),
-      ),
+      );
+    },
     [members, myPillar],
   );
 
@@ -268,8 +272,7 @@ export default function Home() {
           if (typeof dayPillar !== 'string' || !PILLARS.includes(dayPillar)) {
             throw new Error('유효한 60일주를 입력해주세요.');
           }
-          setMyPillar(dayPillar);
-          setSelectionConfirmed(true);
+          setDraftPillar(dayPillar);
           setFilter('all');
           setViewMode('members');
           requestAnimationFrame(() => radarRef.current?.scrollIntoView({ behavior: 'smooth' }));
@@ -283,14 +286,13 @@ export default function Home() {
   }, [members.length]);
 
   const choosePillar = (pillar: string) => {
-    setMyPillar(pillar);
-    setSelectionConfirmed(true);
+    setDraftPillar(pillar);
     setFilter('all');
   };
 
   const searchPillar = (value: string) => {
     setPillarQuery(value);
-    setSelectionConfirmed(false);
+    setDraftPillar(null);
     const normalized = value.replace(/\s/g, '').replace(/일주$/, '');
     if (!normalized) return;
     const exact = PILLARS.find((pillar) => {
@@ -308,7 +310,7 @@ export default function Home() {
       setJoinMessage('');
     } catch (error) {
       setBirthResult(null);
-      setSelectionConfirmed(false);
+      setDraftPillar(null);
       setJoinMessage(error instanceof Error ? error.message : '생년월일을 다시 확인해주세요.');
     }
   };
@@ -324,7 +326,7 @@ export default function Home() {
       setJoinMessage('닉네임은 16자 이내로 입력해주세요.');
       return;
     }
-    if (!selectionConfirmed) {
+    if (!draftPillar) {
       setJoinMessage(entryMode === 'birthday' ? '생년월일로 일주를 먼저 찾아주세요.' : '60일주 중 하나를 선택해주세요.');
       return;
     }
@@ -337,9 +339,10 @@ export default function Home() {
     }
     setMembers((current) => [
       ...current.filter((member) => member.name.toLocaleLowerCase() !== normalizedName),
-      { name, pillar: myPillar, note: '채팅방 참가자' },
+      { name, pillar: draftPillar, note: '채팅방 참가자' },
     ]);
     setMyName(name);
+    setMyPillar(draftPillar);
     setDraftName('');
     setFilter('all');
     setSelectedName(null);
@@ -348,18 +351,22 @@ export default function Home() {
 
   const editMyRegistration = () => {
     setDraftName(myName);
+    setDraftPillar(myPillar);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const removeMyRegistration = () => {
     setMembers((current) => current.filter((member) => member.name !== myName));
     setMyName('');
+    setMyPillar(null);
+    setDraftPillar(null);
+    setBirthResult(null);
     setDraftName('');
     setJoinMessage('내 등록 정보를 내렸어요.');
   };
 
   const copyResult = async () => {
-    if (!selected) return;
+    if (!selected || !myIdentity) return;
     const identity = getPillarIdentity(selected.pillar);
     const text = `${myIdentity.nickname} × ${identity.nickname}\n${selected.compatibility.typeLabel} · 케미 ${selected.compatibility.overall}°\n${selected.compatibility.summary}`;
     try {
@@ -395,7 +402,7 @@ export default function Home() {
               <span className="mini-stamp">天命</span><Sparkles className="h-4 w-4" /> 60갑자 기반 협업 궁합
             </div>
             <h1 className="font-serif-kr max-w-[630px] text-[clamp(2.8rem,6.3vw,6.2rem)] font-black leading-[1.05] tracking-[-0.075em]">
-              <span className="gold-title">{myIdentity.nickname}</span>인 나,
+              <span className="gold-title">{heroIdentity ? heroIdentity.nickname : '내 일주'}</span>{heroIdentity ? '인 나,' : '를 찾고,'}
               <br />누구랑 하면
               <br />일이 풀릴까?
             </h1>
@@ -408,7 +415,7 @@ export default function Home() {
                 <p className="text-sm font-black text-white/80">내 일주 등록하기</p>
                 <p className="mt-1 text-xs text-white/40">한 번 등록하면 기존 회원 전체와의 궁합을 볼 수 있어요</p>
               </div>
-              <strong className="pillar-badge shrink-0 whitespace-nowrap text-sm">{myPillar}일주</strong>
+              <strong className="pillar-badge shrink-0 whitespace-nowrap text-sm">{draftPillar ? `${draftPillar}일주` : '일주 선택 전'}</strong>
             </div>
 
             <label className="mb-2 block text-xs font-black text-white/55" htmlFor="nickname">닉네임</label>
@@ -432,7 +439,7 @@ export default function Home() {
                 className={entryMode === 'birthday' ? 'is-active' : ''}
                 onClick={() => {
                   setEntryMode('birthday');
-                  setSelectionConfirmed(false);
+                  setDraftPillar(null);
                   setJoinMessage('');
                 }}
               >
@@ -445,7 +452,7 @@ export default function Home() {
                 className={entryMode === 'manual' ? 'is-active' : ''}
                 onClick={() => {
                   setEntryMode('manual');
-                  setSelectionConfirmed(false);
+                  setDraftPillar(null);
                   setJoinMessage('');
                 }}
               >
@@ -466,7 +473,7 @@ export default function Home() {
                     onChange={(event) => {
                       setBirthDate(event.target.value);
                       setBirthResult(null);
-                      setSelectionConfirmed(false);
+                      setDraftPillar(null);
                       setJoinMessage('');
                     }}
                     className="mystic-input h-12 w-full rounded-xl px-4 text-sm font-bold text-white outline-none"
@@ -480,7 +487,7 @@ export default function Home() {
                     onChange={(event) => {
                       setLateNight(event.target.checked);
                       setBirthResult(null);
-                      setSelectionConfirmed(false);
+                      setDraftPillar(null);
                       setJoinMessage('');
                     }}
                     className="mt-0.5 h-4 w-4 accent-[#f59e0b]"
@@ -493,7 +500,7 @@ export default function Home() {
                     <div>
                       <p className="text-xs font-bold text-white/45">이 날짜의 일주</p>
                       <strong className="font-serif-kr mt-1 block text-lg">{birthResult.pillar}일주 <span className="text-[#ffc478]">({birthResult.hanja})</span></strong>
-                      <span className="text-sm text-white/65">{myIdentity.emoji} {myIdentity.nickname}</span>
+                      <span className="text-sm text-white/65">{getPillarIdentity(birthResult.pillar).emoji} {getPillarIdentity(birthResult.pillar).nickname}</span>
                     </div>
                   </div>
                 )}
@@ -521,7 +528,7 @@ export default function Home() {
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {matchingPillars.map((pillar) => {
                         const identity = getPillarIdentity(pillar);
-                        const active = selectionConfirmed && pillar === myPillar;
+                        const active = pillar === draftPillar;
                         const darkTile = identity.colorWord === '검은';
                         return (
                           <button
@@ -565,12 +572,12 @@ export default function Home() {
             <div className="selected-pillar mt-4 grid items-center gap-3 rounded-xl p-4 sm:grid-cols-[1fr_auto_1fr]">
               <div>
                 <p className="text-[11px] font-black text-[#17172a]/55">선택한 일주</p>
-                <strong className="mt-1 block text-xl font-black">{selectionConfirmed ? `${myPillar}일주` : '아직 선택 전'}</strong>
+                <strong className="mt-1 block text-xl font-black">{draftPillar ? `${draftPillar}일주` : '아직 선택 전'}</strong>
               </div>
               <ArrowDown className="h-5 w-5 text-[#17172a]/40 sm:-rotate-90" aria-hidden="true" />
               <div className="sm:text-right">
                 <p className="text-[11px] font-black text-[#17172a]/55">색동물로 바꾸면</p>
-                <strong className="mt-1 block text-xl font-black">{selectionConfirmed ? `${myIdentity.emoji} ${myIdentity.nickname}` : '일주를 찾아주세요'}</strong>
+                <strong className="mt-1 block text-xl font-black">{draftIdentity ? `${draftIdentity.emoji} ${draftIdentity.nickname}` : '일주를 찾아주세요'}</strong>
               </div>
             </div>
 
@@ -586,7 +593,7 @@ export default function Home() {
 
         <div className="korean-corner result-console relative rounded-[20px] p-4 shadow-[0_40px_100px_rgba(0,0,0,.3)] sm:p-6 lg:p-8">
           <div className="sub-panel flex flex-col gap-3 rounded-xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            {myName ? (
+            {myName && myPillar && myIdentity ? (
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-bold text-white/45">내 일주</span>
                 <strong className="text-base font-black">@{myName}</strong>
@@ -668,10 +675,14 @@ export default function Home() {
         <div className="mx-auto w-full max-w-[1440px] px-5 py-16 sm:px-8 lg:px-12 lg:py-24">
           <div className="grid gap-6 border-b border-[#f59e0b]/20 pb-9 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="flex items-center gap-5">
-              <CharacterSeal pillar={myPillar} size="large" />
+              {myPillar ? (
+                <CharacterSeal pillar={myPillar} size="large" />
+              ) : (
+                <span className="unselected-seal" aria-hidden="true">?</span>
+              )}
               <div>
                 <p className="mb-2 text-sm font-black text-[#ffc478]">MY TEAM RADAR · 人緣圖</p>
-                <h2 className="font-serif-kr text-4xl font-black tracking-[-0.055em] sm:text-6xl">{myName ? `${myName} · ` : ''}{myIdentity.nickname}의 사람 지도</h2>
+                <h2 className="font-serif-kr text-4xl font-black tracking-[-0.055em] sm:text-6xl">{myIdentity ? `${myName ? `${myName} · ` : ''}${myIdentity.nickname}의 사람 지도` : '내 일주를 찾으면 사람 지도가 열려요'}</h2>
               </div>
             </div>
             <p className="font-serif-kr max-w-[420px] text-base leading-7 text-white/55">편한 사람만 좋은 동료는 아니에요. 손발, 보완, 불꽃, 설명서라는 네 가지 방식으로 함께 일할 사람을 찾아보세요.</p>
@@ -683,7 +694,7 @@ export default function Home() {
 
           <div className="mode-switch" role="tablist" aria-label="관계 보기 방식">
             <button role="tab" aria-selected={viewMode === 'members'} className={viewMode === 'members' ? 'is-active' : ''} onClick={() => setViewMode('members')}><UsersRound className="h-4 w-4" /> 회원 보기</button>
-            <button role="tab" aria-selected={viewMode === 'matrix'} className={viewMode === 'matrix' ? 'is-active' : ''} onClick={() => setViewMode('matrix')}><Gauge className="h-4 w-4" /> 전체 관계표</button>
+            <button role="tab" aria-selected={viewMode === 'matrix'} disabled={!myPillar} className={viewMode === 'matrix' ? 'is-active' : ''} onClick={() => setViewMode('matrix')}><Gauge className="h-4 w-4" /> 전체 관계표</button>
           </div>
 
           {viewMode === 'members' ? (
@@ -723,7 +734,7 @@ export default function Home() {
             <div className="matrix-panel">
               <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <h3 className="text-xl font-black">{myIdentity.nickname} 기준 60색동물 관계표</h3>
+                  <h3 className="text-xl font-black">{myIdentity ? `${myIdentity.nickname} 기준 60색동물 관계표` : '일주를 등록하면 전체 관계표가 열려요'}</h3>
                   <p className="mt-1 text-sm text-white/45">칸의 숫자는 케미 온도예요. 누르면 같은 관계의 팀원 목록으로 이동합니다.</p>
                 </div>
                 <div className="matrix-legend">
@@ -767,7 +778,7 @@ export default function Home() {
       </section>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => { if (!open) { setSelectedName(null); setCopied(false); } }}>
-        {selected && (() => {
+        {selected && myPillar && myIdentity && (() => {
           const identity = getPillarIdentity(selected.pillar);
           const compatibility = selected.compatibility;
           return (

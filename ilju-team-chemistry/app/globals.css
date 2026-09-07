@@ -367,6 +367,11 @@ body {
   color: #ffc478;
 }
 
+.radar-section .mode-switch button:disabled {
+  cursor: not-allowed;
+  opacity: .32;
+}
+
 .radar-section .matrix-panel {
   border-color: rgb(245 158 11 / 20%);
   background: rgb(17 24 39 / 88%);
@@ -428,6 +433,21 @@ button, [role='button'] {
   width: 4.5rem;
   height: 4.5rem;
   font-size: 2.15rem;
+}
+
+.unselected-seal {
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px dashed rgb(245 158 11 / 35%);
+  border-radius: 999px;
+  background: rgb(245 158 11 / 7%);
+  color: rgb(255 196 120 / 58%);
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.5rem;
+  font-weight: 900;
 }
 
 .top-member-card {
