@@ -224,9 +224,9 @@ export default function Home() {
     const lifecycle = new AbortController();
     const registration = context.registerTool(
       {
-        name: 'set_my_color_animal',
-        title: '내 색동물 설정',
-        description: '내 일주에 해당하는 색동물을 설정하고 협업 레이더 결과를 화면에 표시합니다.',
+        name: 'set_my_day_pillar',
+        title: '내 일주 설정',
+        description: '내 일주를 선택하면 해당 색동물로 바꾸고 협업 레이더 결과를 화면에 표시합니다.',
         inputSchema: {
           type: 'object',
           properties: { dayPillar: { type: 'string', enum: PILLARS } },
@@ -253,12 +253,8 @@ export default function Home() {
   }, []);
 
   const moveToRadar = () => radarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const chooseColor = (colorWord: string) => {
-    setMyPillar(getPillarByIdentity(colorWord, myIdentity.animal));
-    setFilter('all');
-  };
-  const chooseAnimal = (animal: string) => {
-    setMyPillar(getPillarByIdentity(myIdentity.colorWord, animal));
+  const choosePillar = (pillar: string) => {
+    setMyPillar(pillar);
     setFilter('all');
   };
 
@@ -282,17 +278,17 @@ export default function Home() {
           <div className="grid h-10 w-10 place-items-center rounded-full bg-[#ffcc4a] text-sm font-black text-[#17172a]">日</div>
           <div>
             <p className="text-lg font-black tracking-[-0.04em]">일주 팀플 케미</p>
-            <p className="text-xs text-white/45">도름스 커뮤니티 실험실</p>
+            <p className="text-xs text-white/45">도름스 커뮤니티 실험실 · 화면 시안</p>
           </div>
         </div>
-        <span className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/55">재미로만 봐주세요</span>
+        <span className="rounded-full border border-white/15 px-3 py-1.5 text-xs text-white/55">운영 논의용 데모</span>
       </header>
 
       <section className="relative mx-auto grid w-full max-w-[1440px] gap-7 px-5 pb-16 pt-5 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(580px,1.35fr)] lg:px-12 lg:pb-24 lg:pt-10">
         <div className="relative z-10 flex flex-col justify-between gap-10 lg:min-h-[690px]">
           <div>
             <div className="mb-7 inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-2 text-sm text-[#ffcc4a]">
-              <Sparkles className="h-4 w-4" /> 색동물 하나로 찾는 나의 협업 동료
+              <Sparkles className="h-4 w-4" /> 내 일주로 찾는 나의 협업 동료
             </div>
             <h1 className="max-w-[630px] text-[clamp(3rem,7vw,6.9rem)] font-black leading-[0.92] tracking-[-0.075em]">
               <span className="text-[#ffcc4a]">{myIdentity.nickname}</span>인 나,
@@ -304,44 +300,42 @@ export default function Home() {
           <div className="max-w-[620px] rounded-[28px] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm sm:p-6">
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-black text-white/80">내 색동물을 골라주세요</p>
-                <p className="mt-1 text-xs text-white/40">색 하나, 동물 하나면 바로 등록돼요</p>
+                <p className="text-sm font-black text-white/80">내 일주를 골라주세요</p>
+                <p className="mt-1 text-xs text-white/40">만세력에서 확인한 두 글자를 선택하면 돼요</p>
               </div>
-              <strong className="text-sm text-[#ffcc4a]">{myIdentity.emoji} {myIdentity.nickname}</strong>
+              <strong className="text-sm text-[#ffcc4a]">{myPillar}일주</strong>
             </div>
 
-            <div className="color-choice-grid" role="radiogroup" aria-label="오행 색 선택">
-              {COLOR_OPTIONS.map((color) => {
-                const active = color.word === myIdentity.colorWord;
-                return (
-                  <button
-                    key={color.word}
-                    role="radio"
-                    aria-checked={active}
-                    className={`color-choice ${active ? 'is-active' : ''}`}
-                    style={{ '--choice-color': color.color } as CSSProperties}
-                    onClick={() => chooseColor(color.word)}
-                  >
-                    <span className="color-choice-dot" />
-                    <span><strong>{color.word}</strong><small>{color.label}</small></span>
-                  </button>
-                );
-              })}
+            <div className="relative">
+              <select
+                aria-label="내 일주 선택"
+                value={myPillar}
+                onChange={(event) => choosePillar(event.target.value)}
+                className="h-14 w-full appearance-none rounded-2xl border border-white/15 bg-white/10 px-5 pr-12 text-lg font-black text-white outline-none transition focus:border-[#ffcc4a] focus:ring-2 focus:ring-[#ffcc4a]/20"
+              >
+                {PILLARS.map((pillar) => (
+                  <option key={pillar} value={pillar} className="bg-[#17172a] text-white">
+                    {pillar}일주
+                  </option>
+                ))}
+              </select>
+              <ArrowDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#ffcc4a]" />
             </div>
 
-            <div className="animal-choice-grid" role="radiogroup" aria-label="띠동물 선택">
-              {ANIMAL_OPTIONS.map((animal) => {
-                const active = animal.name === myIdentity.animal;
-                return (
-                  <button key={animal.name} role="radio" aria-checked={active} className={`animal-choice ${active ? 'is-active' : ''}`} onClick={() => chooseAnimal(animal.name)}>
-                    <span>{animal.emoji}</span><small>{animal.name}</small>
-                  </button>
-                );
-              })}
+            <div className="mt-4 grid items-center gap-3 rounded-2xl bg-[#ffcc4a] p-4 text-[#17172a] sm:grid-cols-[1fr_auto_1fr]">
+              <div>
+                <p className="text-[11px] font-black text-[#17172a]/55">선택한 일주</p>
+                <strong className="mt-1 block text-xl font-black">{myPillar}일주</strong>
+              </div>
+              <ArrowDown className="h-5 w-5 text-[#17172a]/40 sm:-rotate-90" aria-hidden="true" />
+              <div className="sm:text-right">
+                <p className="text-[11px] font-black text-[#17172a]/55">색동물로 바꾸면</p>
+                <strong className="mt-1 block text-xl font-black">{myIdentity.emoji} {myIdentity.nickname}</strong>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-5 text-white/40">생년월일은 저장하지 않고 색동물만 사용합니다.</p>
+              <p className="text-xs leading-5 text-white/40">생년월일은 입력하지 않아요. 만세력에서 확인한 일주만 선택합니다.</p>
               <Button onClick={moveToRadar} className="h-11 rounded-full bg-[#ffcc4a] px-5 text-sm font-black text-[#17172a] hover:bg-[#ffd86f]">
                 내 레이더 보기 <ArrowDown className="ml-1 h-4 w-4" />
               </Button>
@@ -355,7 +349,7 @@ export default function Home() {
               <p className="mb-2 flex items-center gap-2 text-sm font-bold text-[#605f70]"><UsersRound className="h-4 w-4" /> {myIdentity.nickname}의 협업 레이더</p>
               <h2 className="text-3xl font-black tracking-[-0.05em] sm:text-4xl">오늘 같이 일해볼 사람</h2>
             </div>
-            <span className="hidden text-sm font-bold text-[#797786] sm:block">커뮤니티 {COMMUNITY.length}명 중</span>
+            <span className="hidden text-sm font-bold text-[#797786] sm:block">가상 예시 {COMMUNITY.length}명 중</span>
           </div>
 
           <div className="mt-5 grid gap-4">
@@ -397,6 +391,10 @@ export default function Home() {
               </div>
             </div>
             <p className="max-w-[420px] text-base leading-7 text-[#666370]">편한 사람만 좋은 동료는 아니에요. 손발, 보완, 불꽃, 설명서라는 네 가지 방식으로 함께 일할 사람을 찾아보세요.</p>
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-[#e2b231]/40 bg-[#fff1bd] px-4 py-3 text-sm font-bold leading-6 text-[#6f5210]">
+            현재 이름과 인원수는 화면 흐름을 보여주기 위한 가상 예시입니다. 실제 회원 데이터는 아직 연결되지 않았어요.
           </div>
 
           <div className="mode-switch" role="tablist" aria-label="관계 보기 방식">
