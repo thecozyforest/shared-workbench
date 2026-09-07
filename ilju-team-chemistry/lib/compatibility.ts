@@ -12,10 +12,56 @@ export type ScoreKey = 'chemistry' | 'synergy' | 'tension' | 'momentum';
 export const STEMS = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'] as const;
 export const BRANCHES = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'] as const;
 
+const STEM_HANJA = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'] as const;
+const BRANCH_HANJA = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'] as const;
+
 export const PILLARS = Array.from(
   { length: 60 },
   (_, index) => `${STEMS[index % 10]}${BRANCHES[index % 12]}`,
 );
+
+const julianDayNumber = (year: number, month: number, day: number) => {
+  const a = Math.floor((14 - month) / 12);
+  const y = year + 4800 - a;
+  const m = month + 12 * a - 3;
+  return day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+};
+
+export function getDayPillarFromGregorianDate(dateText: string, lateNight = false) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateText);
+  if (!match) throw new Error('양력 생년월일을 정확히 입력해주세요.');
+
+  let [, yearText, monthText, dayText] = match;
+  let year = Number(yearText);
+  let month = Number(monthText);
+  let day = Number(dayText);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error('존재하지 않는 날짜예요. 생년월일을 확인해주세요.');
+  }
+
+  if (lateNight) {
+    date.setUTCDate(date.getUTCDate() + 1);
+    year = date.getUTCFullYear();
+    month = date.getUTCMonth() + 1;
+    day = date.getUTCDate();
+  }
+
+  const index = ((julianDayNumber(year, month, day) + 49) % 60 + 60) % 60;
+  const pillar = PILLARS[index];
+  const stemIndex = STEMS.indexOf(pillar[0] as (typeof STEMS)[number]);
+  const branchIndex = BRANCHES.indexOf(pillar[1] as (typeof BRANCHES)[number]);
+  return {
+    pillar,
+    hanja: `${STEM_HANJA[stemIndex]}${BRANCH_HANJA[branchIndex]}`,
+    adjustedForLateNight: lateNight,
+  };
+}
 
 const STEM_META: Record<string, { element: Element; yinYang: '양' | '음' }> = {
   갑: { element: '목', yinYang: '양' },
@@ -96,6 +142,8 @@ export function getPillarIdentity(pillar: string) {
   const [stem, branch] = pillar;
   const element = STEM_META[stem].element;
   const branchElement = BRANCH_META[branch].element;
+  const stemIndex = STEMS.indexOf(stem as (typeof STEMS)[number]);
+  const branchIndex = BRANCHES.indexOf(branch as (typeof BRANCHES)[number]);
   return {
     nickname: `${COLOR_WORD[element]} ${ANIMAL[branch]}`,
     colorWord: COLOR_WORD[element],
@@ -105,6 +153,7 @@ export function getPillarIdentity(pillar: string) {
     element,
     branchColor: COLOR_HEX[branchElement],
     branchElement,
+    hanja: `${STEM_HANJA[stemIndex]}${BRANCH_HANJA[branchIndex]}`,
   };
 }
 
@@ -160,6 +209,14 @@ const LIUHE = [
   ['자', '축'], ['인', '해'], ['묘', '술'], ['진', '유'], ['사', '신'], ['오', '미'],
 ];
 
+const GENERATING_LIUHE = [
+  ['인', '해'], ['진', '유'], ['오', '미'],
+];
+
+const BANHAP = [
+  ['해', '묘'], ['묘', '미'], ['인', '오'], ['오', '술'], ['사', '유'], ['유', '축'], ['신', '자'], ['자', '진'],
+];
+
 const CHONG = [
   ['자', '오'], ['축', '미'], ['인', '신'], ['묘', '유'], ['진', '술'], ['사', '해'],
 ];
@@ -187,11 +244,12 @@ const elementRelation = (a: Element, b: Element): Relation => {
   return 'B_CONTROLS_A';
 };
 
-type BranchRelation = 'LIUHE' | 'CHONG' | 'XING' | 'PARTIAL_XING' | 'HAI' | 'PO';
+type BranchRelation = 'LIUHE' | 'CHONG' | 'BANHAP' | 'XING' | 'PARTIAL_XING' | 'HAI' | 'PO';
 
 const BRANCH_LABELS: Record<BranchRelation, string> = {
   LIUHE: '육합',
   CHONG: '육충',
+  BANHAP: '반합',
   XING: '형',
   PARTIAL_XING: '형의 긴장',
   HAI: '해',
@@ -239,7 +297,9 @@ const SCORE_EFFECTS: Record<string, Record<ScoreKey, number>> = {
   STEM_SAME: { chemistry: 6, synergy: 3, tension: -2, momentum: 2 },
   STEM_GENERATES: { chemistry: 5, synergy: 9, tension: -2, momentum: 5 },
   STEM_CONTROLS: { chemistry: -4, synergy: 1, tension: 9, momentum: 7 },
-  LIUHE: { chemistry: 14, synergy: 10, tension: -5, momentum: 4 },
+  LIUHE_GENERATING: { chemistry: 14, synergy: 10, tension: -5, momentum: 4 },
+  LIUHE_CONTROLLING: { chemistry: 12, synergy: 10, tension: 2, momentum: 5 },
+  BANHAP: { chemistry: 8, synergy: 7, tension: -2, momentum: 6 },
   CHONG: { chemistry: -12, synergy: -2, tension: 17, momentum: 13 },
   XING: { chemistry: -8, synergy: -2, tension: 13, momentum: 7 },
   PARTIAL_XING: { chemistry: -6, synergy: -1, tension: 10, momentum: 7 },
@@ -266,7 +326,7 @@ const classify = (scores: Record<ScoreKey, number>, sameSignals: number) => {
   if (scores.synergy >= 72) return 'MUTUAL_GROWTH';
   if (scores.tension >= 62 && scores.synergy >= 55) return 'CHECK_AND_BALANCE';
   if (scores.chemistry <= 48 && scores.tension >= 65) return 'OFF_BEAT';
-  if (scores.chemistry >= 64 && sameSignals >= 2) return 'SIMILAR_COLLEAGUES';
+  if (scores.chemistry >= 56 && sameSignals >= 2) return 'SIMILAR_COLLEAGUES';
   if (scores.synergy >= 60 && scores.momentum >= 60) return 'ROLE_COMPLEMENT';
   return 'ADAPTIVE_TEAM';
 };
@@ -330,6 +390,7 @@ export function analyzeCompatibility(
   const branchRelations: BranchRelation[] = [];
   if (pairMatches(LIUHE, branchA, branchB)) branchRelations.push('LIUHE');
   if (pairMatches(CHONG, branchA, branchB)) branchRelations.push('CHONG');
+  if (pairMatches(BANHAP, branchA, branchB)) branchRelations.push('BANHAP');
   if ((branchA === '자' && branchB === '묘') || (branchA === '묘' && branchB === '자') || (branchA === branchB && ['진', '오', '유', '해'].includes(branchA))) {
     branchRelations.push('XING');
   }
@@ -337,11 +398,15 @@ export function analyzeCompatibility(
   if (pairMatches(HAI, branchA, branchB)) branchRelations.push('HAI');
   if (pairMatches(PO, branchA, branchB)) branchRelations.push('PO');
 
-  const priority: BranchRelation[] = ['CHONG', 'LIUHE', 'XING', 'PARTIAL_XING', 'HAI', 'PO'];
+  const priority: BranchRelation[] = ['CHONG', 'LIUHE', 'BANHAP', 'XING', 'PARTIAL_XING', 'HAI', 'PO'];
   const primaryBranch = priority.find((relation) => branchRelations.includes(relation)) ?? null;
   const secondaryBranches = branchRelations.filter((relation) => relation !== primaryBranch);
 
-  if (primaryBranch) applyEffect(scores, primaryBranch);
+  if (primaryBranch === 'LIUHE') {
+    applyEffect(scores, pairMatches(GENERATING_LIUHE, branchA, branchB) ? 'LIUHE_GENERATING' : 'LIUHE_CONTROLLING');
+  } else if (primaryBranch) {
+    applyEffect(scores, primaryBranch);
+  }
 
   let secondaryTension = 0;
   secondaryBranches.forEach((relation) => {
@@ -387,13 +452,15 @@ export function analyzeCompatibility(
   const controlSignals = [stemElementRelation, branchElementRelation, crossAtoB, crossBtoA].filter((item) => item.includes('CONTROLS')).length;
 
   let bucket: Bucket = 'complement';
-  if (type === 'PERFECT_EXECUTION' || type === 'SIMILAR_COLLEAGUES' || overall >= 72) bucket = 'fit';
+  if (type === 'PERFECT_EXECUTION' || type === 'SIMILAR_COLLEAGUES' || overall >= 66) bucket = 'fit';
   else if (type === 'BLAZING_RIVALS') bucket = 'fire';
   else if (type === 'OFF_BEAT' || overall < 48) bucket = 'manual';
 
   const strength =
     primaryBranch === 'LIUHE' || stemLabel.endsWith('합')
       ? '서로의 판단과 행동을 빠르게 읽고, 역할이 맞으면 손발이 자연스럽게 이어져요.'
+      : primaryBranch === 'BANHAP'
+        ? '공동 목표가 생기면 같은 방향으로 빠르게 결집하고, 추진 흐름을 이어가기 쉬워요.'
       : generationSignals >= 2
         ? '한쪽이 건넨 아이디어와 에너지를 다른 쪽이 결과로 키우는 흐름이 살아 있어요.'
         : sameSignals >= 2
@@ -407,6 +474,8 @@ export function analyzeCompatibility(
       ? '실행 속도와 방법이 정면으로 부딪힐 수 있어요. 모든 과정을 함께 결정하면 피로가 커집니다.'
       : primaryBranch === 'XING' || primaryBranch === 'PARTIAL_XING'
         ? '서로에게 높은 기준을 요구하거나 같은 문제를 반복해서 지적하기 쉬워요.'
+        : primaryBranch === 'LIUHE' && !pairMatches(GENERATING_LIUHE, branchA, branchB)
+          ? '가까워지는 속도는 빠르지만 한쪽에 판단이나 실행 권한이 쏠리지 않게 살펴야 해요.'
         : primaryBranch === 'HAI'
           ? '말하지 않은 기대가 엇갈릴 수 있어요. “알아서 알겠지”가 가장 위험한 조합입니다.'
           : primaryBranch === 'PO'
@@ -429,6 +498,8 @@ export function analyzeCompatibility(
       ? '목표는 함께 정하되 방법은 각자 맡고, 이견이 생겼을 때 최종 결정권자를 미리 정하세요.'
       : primaryBranch === 'LIUHE' || stemLabel.endsWith('합')
         ? '호흡이 편하다고 책임까지 모호하게 두지 마세요. 담당과 마감만 선명하면 장점이 더 살아납니다.'
+        : primaryBranch === 'BANHAP'
+          ? '함께 달성할 목표와 중간 이정표를 먼저 정하면 결집력이 더 오래갑니다.'
         : generationSignals >= 2
           ? '한 사람이 계속 지원자 역할에 머물지 않도록 주기적으로 주도권을 바꿔보세요.'
           : '착수할 때 완료 기준을 한 문장으로 맞추고, 중간 검수 시점을 한 번 고정해두세요.';
@@ -442,7 +513,11 @@ export function analyzeCompatibility(
     bucket,
     relationTags: [
       stemLabel,
-      ...branchRelations.map((relation) => BRANCH_LABELS[relation]),
+      ...branchRelations.map((relation) =>
+        relation === 'LIUHE'
+          ? `육합(${pairMatches(GENERATING_LIUHE, branchA, branchB) ? '생합' : '극합'})`
+          : BRANCH_LABELS[relation],
+      ),
       branchElementRelation === 'SAME' ? '일지 같은 오행' : branchElementRelation.includes('GENERATES') ? '일지 상생' : '일지 상극',
       ...(bufferHint ? ['완충 흐름'] : []),
     ],

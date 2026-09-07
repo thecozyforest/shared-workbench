@@ -28,6 +28,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   analyzeCompatibility,
+  getDayPillarFromGregorianDate,
   getPillarByIdentity,
   getPillarIdentity,
   PILLARS,
@@ -163,6 +164,11 @@ function PillarGroupCard({ group, onOpen }: { group: PillarMemberGroup; onOpen: 
 
 export default function Home() {
   const [myPillar, setMyPillar] = useState('정유');
+  const [entryMode, setEntryMode] = useState<'birthday' | 'manual'>('birthday');
+  const [birthDate, setBirthDate] = useState('');
+  const [lateNight, setLateNight] = useState(false);
+  const [birthResult, setBirthResult] = useState<{ pillar: string; hanja: string } | null>(null);
+  const [selectionConfirmed, setSelectionConfirmed] = useState(false);
   const [pillarQuery, setPillarQuery] = useState('');
   const [myName, setMyName] = useState('');
   const [draftName, setDraftName] = useState('');
@@ -263,6 +269,7 @@ export default function Home() {
             throw new Error('유효한 60일주를 입력해주세요.');
           }
           setMyPillar(dayPillar);
+          setSelectionConfirmed(true);
           setFilter('all');
           setViewMode('members');
           requestAnimationFrame(() => radarRef.current?.scrollIntoView({ behavior: 'smooth' }));
@@ -277,7 +284,33 @@ export default function Home() {
 
   const choosePillar = (pillar: string) => {
     setMyPillar(pillar);
+    setSelectionConfirmed(true);
     setFilter('all');
+  };
+
+  const searchPillar = (value: string) => {
+    setPillarQuery(value);
+    setSelectionConfirmed(false);
+    const normalized = value.replace(/\s/g, '').replace(/일주$/, '');
+    if (!normalized) return;
+    const exact = PILLARS.find((pillar) => {
+      const identity = getPillarIdentity(pillar);
+      return normalized === pillar || normalized === identity.nickname.replace(/\s/g, '');
+    });
+    if (exact) choosePillar(exact);
+  };
+
+  const findPillarFromBirthday = () => {
+    try {
+      const result = getDayPillarFromGregorianDate(birthDate, lateNight);
+      choosePillar(result.pillar);
+      setBirthResult({ pillar: result.pillar, hanja: result.hanja });
+      setJoinMessage('');
+    } catch (error) {
+      setBirthResult(null);
+      setSelectionConfirmed(false);
+      setJoinMessage(error instanceof Error ? error.message : '생년월일을 다시 확인해주세요.');
+    }
   };
 
   const joinRoom = (event: React.FormEvent<HTMLFormElement>) => {
@@ -287,16 +320,30 @@ export default function Home() {
       setJoinMessage('닉네임을 먼저 입력해주세요.');
       return;
     }
-    const alreadyJoined = members.some((member) => member.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    if ([...name].length > 16) {
+      setJoinMessage('닉네임은 16자 이내로 입력해주세요.');
+      return;
+    }
+    if (!selectionConfirmed) {
+      setJoinMessage(entryMode === 'birthday' ? '생년월일로 일주를 먼저 찾아주세요.' : '60일주 중 하나를 선택해주세요.');
+      return;
+    }
+    const normalizedName = name.toLocaleLowerCase();
+    const existingMember = members.find((member) => member.name.toLocaleLowerCase() === normalizedName);
+    const editingMyself = Boolean(myName) && myName.toLocaleLowerCase() === normalizedName;
+    if (existingMember && !editingMyself) {
+      setJoinMessage('이미 등록된 닉네임이에요. 다른 닉네임을 사용해주세요.');
+      return;
+    }
     setMembers((current) => [
-      ...current.filter((member) => member.name.toLocaleLowerCase() !== name.toLocaleLowerCase()),
+      ...current.filter((member) => member.name.toLocaleLowerCase() !== normalizedName),
       { name, pillar: myPillar, note: '채팅방 참가자' },
     ]);
     setMyName(name);
     setDraftName('');
     setFilter('all');
     setSelectedName(null);
-    setJoinMessage(alreadyJoined ? `${name}님의 일주를 바꿨어요.` : `${name}님의 일주가 등록됐어요.`);
+    setJoinMessage(existingMember ? `${name}님의 일주를 바꿨어요.` : `${name}님의 일주가 등록됐어요.`);
   };
 
   const editMyRegistration = () => {
@@ -334,11 +381,11 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <div className="brand-seal grid h-11 w-11 place-items-center rounded-xl text-sm font-black">命理</div>
           <div>
-            <p className="font-serif-kr text-lg font-black tracking-[-0.04em]">일주 팀플 케미 <span className="ml-1 text-xs text-[#f7b955]">四柱干支</span></p>
-            <p className="font-serif-kr text-xs text-white/45">도름스 오행 협업 연구소 · 相生相剋</p>
+            <p className="font-serif-kr text-lg font-black tracking-[-0.04em]">일주 팀플 케미 <span className="ml-1 whitespace-nowrap text-xs text-[#f7b955]">四柱干支</span></p>
+            <p className="font-serif-kr text-xs text-white/45"><span className="whitespace-nowrap">도름스 오행 협업 연구소</span> <span className="whitespace-nowrap">· 相生相剋</span></p>
           </div>
         </div>
-        <span className="demo-badge rounded-full px-3 py-1.5 text-xs">운영 논의용 명리 데모</span>
+        <span className="demo-badge hidden rounded-full px-3 py-1.5 text-xs sm:inline-flex">운영 논의용 명리 데모</span>
       </header>
 
       <section className="relative z-10 mx-auto grid w-full max-w-[1440px] gap-7 px-5 pb-16 pt-7 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(580px,1.35fr)] lg:px-12 lg:pb-24 lg:pt-12">
@@ -361,14 +408,14 @@ export default function Home() {
                 <p className="text-sm font-black text-white/80">내 일주 등록하기</p>
                 <p className="mt-1 text-xs text-white/40">한 번 등록하면 기존 회원 전체와의 궁합을 볼 수 있어요</p>
               </div>
-              <strong className="pillar-badge text-sm">{myPillar}일주</strong>
+              <strong className="pillar-badge shrink-0 whitespace-nowrap text-sm">{myPillar}일주</strong>
             </div>
 
             <label className="mb-2 block text-xs font-black text-white/55" htmlFor="nickname">닉네임</label>
             <input
               id="nickname"
               value={draftName}
-              maxLength={20}
+              maxLength={16}
               onChange={(event) => {
                 setDraftName(event.target.value);
                 setJoinMessage('');
@@ -377,78 +424,158 @@ export default function Home() {
               className="mystic-input mb-4 h-14 w-full rounded-xl px-5 text-base font-bold text-white outline-none placeholder:text-white/25"
             />
 
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="text-xs font-black text-white/55" htmlFor="day-pillar-search">내 일주 찾기</label>
-              <button type="button" onClick={() => setPillarQuery('')} className="text-xs font-black text-[#ffc478] underline underline-offset-4">60일주 전체 보기</button>
-            </div>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-              <input
-                id="day-pillar-search"
-                value={pillarQuery}
-                onChange={(event) => setPillarQuery(event.target.value)}
-                placeholder="정유, 정유일주, 붉은 닭 검색"
-                className="mystic-input h-12 w-full rounded-xl pl-11 pr-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
-              />
+            <div className="entry-mode-switch mb-4 grid grid-cols-2 rounded-xl p-1" role="tablist" aria-label="일주 찾는 방법">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={entryMode === 'birthday'}
+                className={entryMode === 'birthday' ? 'is-active' : ''}
+                onClick={() => {
+                  setEntryMode('birthday');
+                  setSelectionConfirmed(false);
+                  setJoinMessage('');
+                }}
+              >
+                생일로 찾기
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={entryMode === 'manual'}
+                className={entryMode === 'manual' ? 'is-active' : ''}
+                onClick={() => {
+                  setEntryMode('manual');
+                  setSelectionConfirmed(false);
+                  setJoinMessage('');
+                }}
+              >
+                일주 직접 선택
+              </button>
             </div>
 
-            <div className="mt-3 max-h-[360px] overflow-y-auto rounded-2xl border border-white/10 bg-black/10 p-2">
-              {matchingPillars.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {matchingPillars.map((pillar) => {
-                    const identity = getPillarIdentity(pillar);
-                    const active = pillar === myPillar;
-                    const darkTile = identity.colorWord === '검은';
-                    return (
-                      <button
-                        key={pillar}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => {
-                          choosePillar(pillar);
-                          setJoinMessage('');
-                        }}
-                        className="relative min-h-28 rounded-2xl border-2 p-3 text-left transition hover:-translate-y-0.5 hover:brightness-105"
-                        style={{
-                          backgroundColor: identity.color,
-                          borderColor: active ? '#ffffff' : 'transparent',
-                          boxShadow: active ? '0 0 0 3px #17172a, 0 0 0 5px #ffcc4a' : undefined,
-                          color: darkTile ? '#ffffff' : '#17172a',
-                        }}
-                      >
-                        {active && <Check className="absolute right-2 top-2 h-4 w-4" />}
-                        <span
-                          className="grid h-11 w-11 place-items-center rounded-full border border-black/10 text-2xl shadow-sm"
-                          style={{ backgroundColor: identity.branchColor }}
-                          aria-hidden="true"
-                        >
-                          {identity.emoji}
-                        </span>
-                        <strong className="mt-2 block text-base font-black">{pillar}일주</strong>
-                        <small className={`block text-[11px] font-black ${darkTile ? 'text-white/65' : 'text-[#17172a]/60'}`}>{identity.nickname}</small>
-                      </button>
-                    );
-                  })}
+            {entryMode === 'birthday' ? (
+              <div className="birth-finder rounded-xl p-4">
+                <label className="mb-2 block text-xs font-black text-white/55" htmlFor="birth-date">양력 생년월일</label>
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input
+                    id="birth-date"
+                    type="date"
+                    min="1900-01-01"
+                    max="2035-12-31"
+                    value={birthDate}
+                    onChange={(event) => {
+                      setBirthDate(event.target.value);
+                      setBirthResult(null);
+                      setSelectionConfirmed(false);
+                      setJoinMessage('');
+                    }}
+                    className="mystic-input h-12 w-full rounded-xl px-4 text-sm font-bold text-white outline-none"
+                  />
+                  <button type="button" onClick={findPillarFromBirthday} className="gold-button h-12 rounded-xl px-5 text-sm font-black">일주 찾기</button>
                 </div>
-              ) : (
-                <div className="px-4 py-8 text-center text-sm font-bold text-white/45">찾는 일주가 없어요. 두 글자를 확인해주세요.</div>
-              )}
-            </div>
+                <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs leading-5 text-white/55">
+                  <input
+                    type="checkbox"
+                    checked={lateNight}
+                    onChange={(event) => {
+                      setLateNight(event.target.checked);
+                      setBirthResult(null);
+                      setSelectionConfirmed(false);
+                      setJoinMessage('');
+                    }}
+                    className="mt-0.5 h-4 w-4 accent-[#f59e0b]"
+                  />
+                  <span>밤 11시 이후에 태어났어요 <span className="text-white/35">(야자시 기준으로 다음 날 일주 계산)</span></span>
+                </label>
+                {birthResult && (
+                  <div className="birth-result mt-4 flex items-center gap-3 rounded-xl p-3" role="status">
+                    <CharacterSeal pillar={birthResult.pillar} />
+                    <div>
+                      <p className="text-xs font-bold text-white/45">이 날짜의 일주</p>
+                      <strong className="font-serif-kr mt-1 block text-lg">{birthResult.pillar}일주 <span className="text-[#ffc478]">({birthResult.hanja})</span></strong>
+                      <span className="text-sm text-white/65">{myIdentity.emoji} {myIdentity.nickname}</span>
+                    </div>
+                  </div>
+                )}
+                <p className="mt-3 text-xs leading-5 text-white/35">생년월일은 이 화면에서 일주 계산에만 사용하며 등록하거나 저장하지 않습니다.</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label className="text-xs font-black text-white/55" htmlFor="day-pillar-search">내 일주 찾기</label>
+                  <button type="button" onClick={() => setPillarQuery('')} className="text-xs font-black text-[#ffc478] underline underline-offset-4">60일주 전체 보기</button>
+                </div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                  <input
+                    id="day-pillar-search"
+                    value={pillarQuery}
+                    onChange={(event) => searchPillar(event.target.value)}
+                    placeholder="정유, 정유일주, 붉은 닭 검색"
+                    className="mystic-input h-12 w-full rounded-xl pl-11 pr-4 text-sm font-bold text-white outline-none placeholder:text-white/25"
+                  />
+                </div>
+
+                <div className="mt-3 max-h-[360px] overflow-y-auto rounded-2xl border border-white/10 bg-black/10 p-2">
+                  {matchingPillars.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {matchingPillars.map((pillar) => {
+                        const identity = getPillarIdentity(pillar);
+                        const active = selectionConfirmed && pillar === myPillar;
+                        const darkTile = identity.colorWord === '검은';
+                        return (
+                          <button
+                            key={pillar}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => {
+                              choosePillar(pillar);
+                              setBirthResult(null);
+                              setJoinMessage('');
+                            }}
+                            className="relative min-h-28 rounded-2xl border-2 p-3 text-left transition hover:-translate-y-0.5 hover:brightness-105"
+                            style={{
+                              backgroundColor: identity.color,
+                              borderColor: active ? '#ffffff' : 'transparent',
+                              boxShadow: active ? '0 0 0 3px #17172a, 0 0 0 5px #ffcc4a' : undefined,
+                              color: darkTile ? '#ffffff' : '#17172a',
+                            }}
+                          >
+                            {active && <Check className="absolute right-2 top-2 h-4 w-4" />}
+                            <span
+                              className="grid h-11 w-11 place-items-center rounded-full border border-black/10 text-2xl shadow-sm"
+                              style={{ backgroundColor: identity.branchColor }}
+                              aria-hidden="true"
+                            >
+                              {identity.emoji}
+                            </span>
+                            <strong className="mt-2 block text-base font-black">{pillar}일주</strong>
+                            <small className={`block text-[11px] font-black ${darkTile ? 'text-white/65' : 'text-[#17172a]/60'}`}>{identity.nickname}</small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-8 text-center text-sm font-bold text-white/45">찾는 일주가 없어요. 두 글자를 확인해주세요.</div>
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="selected-pillar mt-4 grid items-center gap-3 rounded-xl p-4 sm:grid-cols-[1fr_auto_1fr]">
               <div>
                 <p className="text-[11px] font-black text-[#17172a]/55">선택한 일주</p>
-                <strong className="mt-1 block text-xl font-black">{myPillar}일주</strong>
+                <strong className="mt-1 block text-xl font-black">{selectionConfirmed ? `${myPillar}일주` : '아직 선택 전'}</strong>
               </div>
               <ArrowDown className="h-5 w-5 text-[#17172a]/40 sm:-rotate-90" aria-hidden="true" />
               <div className="sm:text-right">
                 <p className="text-[11px] font-black text-[#17172a]/55">색동물로 바꾸면</p>
-                <strong className="mt-1 block text-xl font-black">{myIdentity.emoji} {myIdentity.nickname}</strong>
+                <strong className="mt-1 block text-xl font-black">{selectionConfirmed ? `${myIdentity.emoji} ${myIdentity.nickname}` : '일주를 찾아주세요'}</strong>
               </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-5 text-white/40">생년월일은 받지 않아요. 이 데모에서는 열린 화면 안에서만 명단이 유지됩니다.</p>
+              <p className="text-xs leading-5 text-white/40">등록되는 정보는 닉네임과 계산된 일주뿐이에요. 명단은 현재 열린 화면에서만 유지됩니다.</p>
               <Button type="submit" className="gold-button h-11 rounded-xl px-5 text-sm font-black">
                 명판 등록하기 <ArrowDown className="ml-1 h-4 w-4" />
               </Button>

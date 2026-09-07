@@ -252,6 +252,41 @@ body {
   box-shadow: 0 0 0 3px rgb(245 158 11 / 10%);
 }
 
+.mystic-input[type='date'] {
+  color-scheme: dark;
+}
+
+.entry-mode-switch {
+  border: 1px solid rgb(74 60 45 / 55%);
+  background: rgb(4 7 13 / 52%);
+}
+
+.entry-mode-switch button {
+  min-height: 2.7rem;
+  border-radius: .55rem;
+  color: rgb(255 255 255 / 42%);
+  font-size: .82rem;
+  font-weight: 900;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.entry-mode-switch button.is-active {
+  border: 1px solid rgb(245 158 11 / 34%);
+  background: rgb(245 158 11 / 14%);
+  color: #ffc478;
+  box-shadow: inset 0 0 14px rgb(245 158 11 / 5%);
+}
+
+.birth-finder {
+  border: 1px solid rgb(74 60 45 / 48%);
+  background: rgb(4 7 13 / 42%);
+}
+
+.birth-result {
+  border: 1px solid rgb(86 229 169 / 22%);
+  background: rgb(15 81 57 / 25%);
+}
+
 .selected-pillar {
   border: 1px solid rgb(245 158 11 / 38%);
   background: linear-gradient(110deg, rgb(245 158 11 / 22%), rgb(245 158 11 / 8%));
